@@ -7,4 +7,4 @@ from youtube_dl.tasks import import_from_youtube
 def index():
     url = request.args.get("url") 
     import_from_youtube.delay(url)
-    return make_response()
+    return make_response("done!")
