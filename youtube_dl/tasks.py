@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import json
 import md5
 import os
@@ -38,13 +40,13 @@ def import_from_youtube(url, log_to_stdout=False):
         )
         output, stderr = proc.communicate()
 
-        output = output.split("\n")
+        output = output.splitlines()
         for line in output:
             if line.startswith("[download] Destination: "):
                 filename = line[24:39]
                 break
             elif line.endswith("has already been downloaded"):
-                filename = line[11:26]
+                filename = line[11:-28]
                 print "[INFO] Already downloaded /tmp/%s" % filename
                 break
 
