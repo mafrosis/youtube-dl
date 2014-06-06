@@ -31,7 +31,7 @@ def import_from_youtube(url, log_to_stdout=False):
         # download stream
         print '[INFO] Downloading {}'.format(url)
         proc = Popen(
-            'youtube-dl --write-info-json --no-progress {}'.format(url),
+            'youtube-dl --write-info-json --no-progress --socket-timeout 10 {}'.format(url),
             stdout=PIPE,
             stderr=STDOUT,
             shell=True,
