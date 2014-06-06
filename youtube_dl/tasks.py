@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 from youtube_dl import celery
 
-STORAGE_PATH = "/media/icybox/data/MP3/MP3/youtube/"
+STORAGE_PATH = '/media/icybox/data/MP3/MP3/youtube/'
 
 
 @celery.task
@@ -21,76 +21,85 @@ def import_from_youtube(url, log_to_stdout=False):
     try:
         # TODO elementary handling of a double click..
         lock = md5.new(url).hexdigest()
-        if os.path.exists("/tmp/%s.lock" % lock):
-            print "[WARNING] This url is already being downloaded: %s" % url
+        if os.path.exists('/tmp/{}.lock'.format(lock)):
+            print '[WARNING] This url is already being downloaded: {}'.format(url)
             return
         else:
-            f = open("/tmp/%s.lock" % lock, "w+")
-            f.write("")
-            f.close()
+            with open('/tmp/{}.lock'.format(lock), 'w') as f:
+                f.write('')
 
         # download stream
-        print "[INFO] Downloading %s" % url
+        print '[INFO] Downloading {}'.format(url)
         proc = Popen(
-            "/usr/local/bin/youtube-dl --write-info-json --no-progress %s" % url,
+            'youtube-dl --write-info-json --no-progress {}'.format(url),
             stdout=PIPE,
             stderr=STDOUT,
             shell=True,
-            cwd="/tmp"
+            cwd='/tmp'
         )
         output, stderr = proc.communicate()
 
-        output = output.splitlines()
-        for line in output:
-            if line.startswith("[download] Destination: "):
+        for line in output.splitlines():
+            if line.startswith('[download] Destination: '):
                 filename = line[24:39]
                 break
-            elif line.endswith("has already been downloaded"):
+            elif line.endswith('has already been downloaded'):
                 filename = line[11:-28]
-                print "[INFO] Already downloaded /tmp/%s" % filename
+                print '[INFO] Already downloaded /tmp/{}'.format(filename)
                 break
 
         if filename is None:
             # download failed somehow
-            raise Exception("Failed parsing out filename")
+            raise Exception('Failed parsing out filename {}'.format(url))
 
-        print "[INFO] Processing %s" % filename
+        print '[INFO] Processing {}'.format(filename)
 
         # parse the info file for tagging
-        f = open("/tmp/%s.info.json" % filename, "r")
-        info = json.loads(f.read())
-        f.close()
+        with open('/tmp/{}.info.json'.format(filename), 'r') as f:
+            info = json.loads(f.read())
 
         # use the movie's meta title as the mp3 filename
-        outputname = "%s.mp3" % re.sub("[^a-zA-Z0-9]", "_", info['stitle'])
+        outputname = '{}.mp3'.format(re.sub('[^a-zA-Z0-9]', '_', info['stitle']))
 
-        if os.path.splitext(filename)[1] != "mp3":
+        if os.path.splitext(filename)[1] != 'mp3':
             # convert to MP3
-            print "[INFO] Converting to mp3"
-            subprocess.check_call('/usr/bin/ffmpeg -i "/tmp/%s" -loglevel panic -y -vn -acodec libmp3lame -ar 44100 -ac 2 "/tmp/%s"' % (filename, outputname), shell=True)
+            print '[INFO] Converting to mp3'
+            subprocess.check_call(
+                "/usr/bin/ffmpeg -i '/tmp/{}' -loglevel panic -y -vn -acodec libmp3lame -ar 44100 -ac 2 '/tmp/{}'".format(
+                    filename, outputname
+                ), shell=True
+            )
         else:
             # rename the file
             os.rename(filename, outputname)
 
         # elementary tagging
-        print "[INFO] Tagging %s" % outputname
-        subprocess.check_call("/usr/bin/eyeD3 --no-color -a '%s' -t '%s' -A 'Youtube-DL' --set-user-text-frame 'Ripping Tool:youtube-dl' --set-url-frame 'WOAF:%s' /tmp/%s" % (info['title'],info['title'], url, outputname), shell=True)
+        print '[INFO] Tagging {}'.format(outputname)
+        subprocess.check_call(
+            (
+                "/usr/bin/eyeD3 --no-color -a '{}' -t '{}' -A 'Youtube-DL' "
+                "--set-user-text-frame 'Ripping Tool:youtube-dl' "
+                "--set-url-frame 'WOAF:{}' /tmp/{}"
+            ).format(
+                info['title'], info['title'], url, outputname
+            ), shell=True
+        )
 
         # move the new file into mpd lib
-        shutil.move("/tmp/%s" % outputname, "%s%s" % (STORAGE_PATH, outputname))
-        print "[INFO] Copied to %s%s" % (STORAGE_PATH, outputname)
+        shutil.move('/tmp/{}'.format(outputname), '{}{}'.format(STORAGE_PATH, outputname))
+        print '[INFO] Copied to {}{}'.format(STORAGE_PATH, outputname)
 
         # remove the URL lock
-        os.remove("/tmp/%s.lock" % lock)
+        os.remove('/tmp/{}.lock'.format(lock))
 
     finally:
         # clean up
         if filename is not None:
-            if os.path.exists("/tmp/%s.lock" % lock):
-                os.remove("/tmp/%s.lock" % lock)
+            if os.path.exists('/tmp/{}'.format(filename)):
+                os.remove('/tmp/{}'.format(filename))
 
-            if os.path.exists("/tmp/%s" % filename):
-                os.remove("/tmp/%s" % filename)
+        if os.path.exists('/tmp/{}.lock'.format(lock)):
+            os.remove('/tmp/{}.lock'.format(lock))
 
-            if os.path.exists("/tmp/%s.info.json" % filename):
-                os.remove("/tmp/%s.info.json" % filename)
+        if os.path.exists('/tmp/{}.info.json'.format(filename)):
+            os.remove('/tmp/{}.info.json'.format(filename))
