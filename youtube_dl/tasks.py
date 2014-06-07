@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 import traceback
-from subprocess import Popen, PIPE, STDOUT
 
 from youtube_dl import celery
 
@@ -35,10 +34,10 @@ def import_from_youtube(url, log_to_stdout=False):
 
         # download stream
         print '[INFO] Downloading {}'.format(url)
-        proc = Popen(
+        proc = subprocess.Popen(
             'youtube-dl --write-info-json --no-progress --socket-timeout 10 {}'.format(url),
-            stdout=PIPE,
-            stderr=STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             shell=True,
             cwd='/tmp'
         )
