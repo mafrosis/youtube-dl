@@ -60,7 +60,7 @@ def import_from_youtube(url, log_to_stdout=False):
         print '[INFO] Processing {}'.format(filename)
 
         # parse the info file for tagging
-        with open('/tmp/{}.info.json'.format(filename), 'r') as f:
+        with open('/tmp/{}.info.json'.format(os.path.splitext(filename)[0]), 'r') as f:
             info = json.loads(f.read())
 
         # use the movie's meta title as the mp3 filename
