@@ -10,8 +10,6 @@ import traceback
 
 from youtube_dl import celery
 
-STORAGE_PATH = '/media/icybox/data/MP3/MP3/youtube/'
-
 
 @celery.task
 def import_from_youtube(url, log_to_stdout=False):
@@ -93,8 +91,12 @@ def import_from_youtube(url, log_to_stdout=False):
         )
 
         # move the new file into mpd lib
-        shutil.move('/tmp/{}'.format(outputname), '{}{}'.format(STORAGE_PATH, outputname))
-        print '[INFO] Copied to {}{}'.format(STORAGE_PATH, outputname)
+        subprocess.call(
+            'scp /tmp/{} monopoly:/media/pools/music/mp3/youtube'.format(outputname),
+            shell=True
+        )
+        shutil.move('/tmp/{}'.format(outputname), '/home/mafro/mp3/youtube/{}'.format(outputname))
+        print '[INFO] Copied to kerplunk & monopoly'
 
         # remove the URL lock
         os.remove('/tmp/{}.lock'.format(lock))
