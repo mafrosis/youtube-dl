@@ -30,6 +30,9 @@ def import_from_youtube(url, log_to_stdout=False):
             with open('/tmp/{}.lock'.format(lock), 'w') as f:
                 f.write('')
 
+        # log youtube-dl version
+        print '[INFO] youtube-dl {}'.format(subprocess.check_output('youtube-dl --version', shell=True))
+
         # download stream
         print '[INFO] Downloading {}'.format(url)
         proc = Popen(
