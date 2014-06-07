@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import traceback
 from subprocess import Popen, PIPE, STDOUT
 
 from youtube_dl import celery
@@ -17,6 +18,7 @@ STORAGE_PATH = '/media/icybox/data/MP3/MP3/youtube/'
 def import_from_youtube(url, log_to_stdout=False):
     filename = None
     lock = None
+    output, stderr = None, None
 
     try:
         # TODO elementary handling of a double click..
@@ -39,6 +41,9 @@ def import_from_youtube(url, log_to_stdout=False):
         )
         output, stderr = proc.communicate()
 
+        if proc.returncode != 0:
+            raise DownloadError(stderr)
+
         for line in output.splitlines():
             if line.startswith('[download] Destination: '):
                 filename = line[24:39]
@@ -50,7 +55,7 @@ def import_from_youtube(url, log_to_stdout=False):
 
         if filename is None:
             # download failed somehow
-            raise Exception('Failed parsing out filename {}'.format(url))
+            raise AppError('Failed parsing out filename {}'.format(url))
 
         print '[INFO] Processing {}'.format(filename)
 
@@ -92,6 +97,17 @@ def import_from_youtube(url, log_to_stdout=False):
         # remove the URL lock
         os.remove('/tmp/{}.lock'.format(lock))
 
+    except AppError as e:
+        print '[ERROR] {}'.format(e)
+
+    except DownloadError as e:
+        print '[ERROR] Youtube-dl returned non-zero status\n  {}'.format(e)
+
+    except Exception as e:
+        traceback.print_exc()
+        print '[STDOUT] {}'.format(output)
+        print '[STDERR] {}'.format(stderr)
+
     finally:
         # clean up
         if filename is not None:
@@ -103,3 +119,10 @@ def import_from_youtube(url, log_to_stdout=False):
 
         if os.path.exists('/tmp/{}.info.json'.format(filename)):
             os.remove('/tmp/{}.info.json'.format(filename))
+
+
+class AppError(Exception):
+    pass
+
+class DownloadError(Exception):
+    pass
