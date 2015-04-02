@@ -8,10 +8,11 @@ import shutil
 import subprocess
 import traceback
 
-from youtube_dl import celery
+from . import celery_app
 
 
-@celery.task
+
+@celery_app.task
 def import_from_youtube(url, log_to_stdout=False):
     filename = None
     lock = None
